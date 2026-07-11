@@ -28,8 +28,11 @@ function toApiBaseUrl(value: string | undefined): string {
   return baseUrl.endsWith("/api/v1") ? baseUrl : `${baseUrl}/api/v1`;
 }
 
+const runtimeMode = (process.env.NEXT_PUBLIC_MODE ?? process.env.NODE_ENV ?? "development").toUpperCase();
+const isProductionMode = runtimeMode === "PRODUCTION" || runtimeMode === "PROD";
+
 const API_BASE_URL = toApiBaseUrl(
-  process.env.NODE_ENV === "production"
+  isProductionMode
     ? process.env.NEXT_PUBLIC_PRODUCTION_BACKEND_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL
     : process.env.NEXT_PUBLIC_API_BASE_URL,
 );
