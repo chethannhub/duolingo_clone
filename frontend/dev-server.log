@@ -9,3 +9,118 @@
 Creating turbopack project { dir: 'E:\\duolingo_clone\\frontend', testMode: true }
 
  GET /leaderboard 200 in 1988ms (next.js: 1464ms, application-code: 524ms)
+ GET /learn 200 in 1158ms (next.js: 134ms, application-code: 1025ms)
+ GET /leaderboard 200 in 475ms (next.js: 35ms, application-code: 440ms)
+ GET /learn 200 in 4.5s (next.js: 24ms, application-code: 4.5s)
+ GET /learn 200 in 2.4s (next.js: 56ms, application-code: 2.4s)
+ GET /learn 200 in 1301ms (next.js: 35ms, application-code: 1266ms)
+ GET /learn 200 in 1369ms (next.js: 14ms, application-code: 1356ms)
+[browser] Image with src "http://127.0.0.1:3000/Icon=Lightning,%20Size=Small.svg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+ GET /leaderboard 200 in 985ms (next.js: 234ms, application-code: 750ms)
+ GET /learn 200 in 996ms (next.js: 87ms, application-code: 909ms)
+ GET /learn 200 in 1167ms (next.js: 13ms, application-code: 1154ms)
+ GET /learn 200 in 992ms (next.js: 11ms, application-code: 981ms)
+[browser] Image with src "http://localhost:3000/Icon=Lightning,%20Size=Small.svg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+ GET /learn 200 in 7.6s (next.js: 483ms, application-code: 7.1s)
+[browser] Image with src "http://localhost:3000/Icon=Lightning,%20Size=Small.svg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+ GET /lesson/unit/1/level/1 200 in 24.2s (next.js: 24.0s, application-code: 266ms)
+ GET /lesson/unit/1/level/2 200 in 10.5s (next.js: 10.2s, application-code: 272ms)
+ GET /lesson/unit/1/level/1 200 in 215ms (next.js: 32ms, application-code: 183ms)
+ GET /lesson 200 in 1228ms (next.js: 866ms, application-code: 362ms)
+ GET /lesson/unit/1/level/1 200 in 1216ms (next.js: 9ms, application-code: 1207ms)
+ GET /lesson 200 in 192ms (next.js: 35ms, application-code: 157ms)
+ GET /learn 200 in 145ms (next.js: 36ms, application-code: 109ms)
+ GET /learn 200 in 138ms (next.js: 23ms, application-code: 115ms)
+ GET /learn 200 in 36ms (next.js: 15ms, application-code: 22ms)
+ GET /learn 200 in 858ms (next.js: 16ms, application-code: 842ms)
+ GET /learn 200 in 35ms (next.js: 12ms, application-code: 22ms)
+ GET /learn 200 in 30ms (next.js: 12ms, application-code: 18ms)
+ GET /learn 200 in 34ms (next.js: 12ms, application-code: 22ms)
+ GET /learn 200 in 48ms (next.js: 15ms, application-code: 33ms)
+ GET /learn 200 in 6.5s (next.js: 33ms, application-code: 6.5s)
+ GET /learn 200 in 5.7s (next.js: 12ms, application-code: 5.7s)
+ GET /learn 200 in 4.8s (next.js: 38ms, application-code: 4.8s)
+ GET /learn 200 in 50ms (next.js: 17ms, application-code: 32ms)
+ GET /learn 200 in 5.0s (next.js: 13ms, application-code: 5.0s)
+ GET /learn 200 in 89ms (next.js: 17ms, application-code: 73ms)
+ GET /learn 200 in 46ms (next.js: 16ms, application-code: 30ms)
+ GET /learn 200 in 63ms (next.js: 19ms, application-code: 44ms)
+ GET /learn 200 in 63ms (next.js: 13ms, application-code: 51ms)
+ GET /learn 200 in 4.3s (next.js: 15ms, application-code: 4.3s)
+ GET /learn 200 in 61ms (next.js: 15ms, application-code: 45ms)
+ GET /learn 200 in 89ms (next.js: 14ms, application-code: 75ms)
+ GET /learn 200 in 3.5s (next.js: 12ms, application-code: 3.5s)
+ GET /leaderboard 200 in 1732ms (next.js: 76ms, application-code: 1656ms)
+ GET /leaderboard 200 in 1270ms (next.js: 75ms, application-code: 1195ms)
+ GET /leaderboard 200 in 1197ms (next.js: 400ms, application-code: 796ms)
+ GET /leaderboard 200 in 1209ms (next.js: 45ms, application-code: 1165ms)
+ GET /leaderboard 200 in 537ms (next.js: 19ms, application-code: 518ms)
+ GET /learn 200 in 6.8s (next.js: 8ms, application-code: 6.8s)
+ GET /learn 200 in 5.9s (next.js: 15ms, application-code: 5.9s)
+ GET /learn 200 in 2.4s (next.js: 59ms, application-code: 2.3s)
+ GET /leaderboard 200 in 339ms (next.js: 29ms, application-code: 309ms)
+ GET /learn 200 in 660ms (next.js: 8ms, application-code: 652ms)
+ GET /learn 200 in 31ms (next.js: 12ms, application-code: 19ms)
+ GET /learn 200 in 867ms (next.js: 6ms, application-code: 861ms)
+ GET /learn 200 in 31ms (next.js: 12ms, application-code: 20ms)
+ GET /learn 200 in 23ms (next.js: 5ms, application-code: 17ms)
+ GET /learn 200 in 28ms (next.js: 8ms, application-code: 21ms)
+ GET /learn 200 in 1068ms (next.js: 13ms, application-code: 1054ms)
+ GET /learn 200 in 50ms (next.js: 5ms, application-code: 45ms)
+ GET /learn 200 in 35ms (next.js: 13ms, application-code: 23ms)
+ GET /learn 200 in 35ms (next.js: 10ms, application-code: 26ms)
+ GET /learn 200 in 33ms (next.js: 7ms, application-code: 25ms)
+ GET /learn 200 in 45ms (next.js: 14ms, application-code: 31ms)
+ GET /learn 200 in 5.5s (next.js: 9ms, application-code: 5.5s)
+ GET /learn 200 in 4.5s (next.js: 12ms, application-code: 4.5s)
+ GET /learn 200 in 3.4s (next.js: 13ms, application-code: 3.4s)
+ GET /learn 200 in 1316ms (next.js: 12ms, application-code: 1304ms)
+ GET /learn 200 in 2.3s (next.js: 9ms, application-code: 2.3s)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/learn" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" className="geist_a715...">
+                          <body
+                            className="min-h-full flex flex-col"
+-                           data-new-gr-c-s-check-loaded="14.1310.0"
+-                           data-gr-ext-installed=""
+                          >
+                  ...
+ 
+[browser] Image with src "http://127.0.0.1:3000/Icon=Lightning,%20Size=Small.svg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  Reload env: .env
+  Reload env: .env
+  Reload env: .env
+  Reload env: .env
+  Reload env: .env
+  Reload env: .env
+  Reload env: .env
+  Reload env: .env
+  Reload env: .env
+[?25h

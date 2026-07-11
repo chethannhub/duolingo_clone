@@ -2,171 +2,123 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  FaArrowRight,
-  FaCheck,
-  FaGem,
-  FaHeart,
-  FaRotateRight,
-  FaXmark,
-} from "react-icons/fa6";
+import { FaArrowRight, FaCheck, FaGem, FaHeart, FaXmark } from "react-icons/fa6";
 
-const API_BASES = process.env.NEXT_PUBLIC_API_BASE_URL
-  ? [process.env.NEXT_PUBLIC_API_BASE_URL]
-  : ["http://localhost:8000", "http://localhost:8001"];
-const LEARNER_ID = 1;
+import { createIdempotencyKey } from "@/lib/api/client";
+import { getLessonPreview, startLessonAttempt, submitAnswer, type LessonAnswer } from "@/lib/api/lessons";
+import { getLearningPath } from "@/lib/api/learning-path";
 
 type Learner = {
-  id: number;
-  name: string;
-  totalXp: number;
-  todayXp: number;
-  dailyXpGoal: number;
-  currentStreak: number;
-  longestStreak: number;
-  hearts: number;
-  maxHearts: number;
-  gems: number;
+  hearts?: number;
+  maxHearts?: number;
+  gems?: number;
+  streak?: number;
+  totalXp?: number;
 };
 
-type LessonOption = {
-  id: number;
+type ExerciseOption = {
+  id: number | string;
   text: string;
-  pairKey: string | null;
+  side?: "left" | "right";
 };
 
-type LessonExercise = {
+type Exercise = {
   id: number;
-  type: "multiple_choice" | "fill_blank" | "type_answer" | "word_bank" | "match_pairs";
-  question: string;
-  prompt: string | null;
-  explanation: string | null;
-  orderIndex: number;
-  options: LessonOption[];
+  type: "multiple_choice" | "translate_word_bank" | "match_pairs" | "fill_blank" | "type_answer";
+  instruction?: string;
+  prompt?: string;
+  hint?: string | null;
+  orderIndex?: number;
+  options: ExerciseOption[];
 };
 
-type Lesson = {
+type AttemptResponse = {
+  attemptToken: string;
+  status: string;
+  lessonId: number;
+  currentExerciseIndex: number;
+  totalExercises: number;
+  correctCount: number;
+  wrongCount: number;
+  learner: Learner;
+  currentExercise: Exercise | null;
+};
+
+type SubmitResponse = AttemptResponse & {
+  result?: "correct" | "incorrect";
+  feedbackTitle?: string;
+  feedbackMessage?: string | null;
+  correctAnswer?: string | null;
+  heartLost?: boolean;
+  currentHearts?: number;
+  completion?: {
+    xpEarned: number;
+    levelCompleted: boolean;
+    unlockedAchievements: Array<{ key: string; name: string }>;
+  } | null;
+};
+
+type LessonPreview = {
   id: number;
   title: string;
   xpReward: number;
-  level: {
-    title: string;
-    unit: {
-      title: string;
-      section: {
-        title: string;
-      };
-    };
-  };
-  exercises: LessonExercise[];
-};
-
-type Attempt = {
-  id: number;
-  correctCount: number;
-  wrongCount: number;
-};
-
-type AnswerResult = {
-  correct: boolean;
-  correctAnswer: string;
-  explanation: string | null;
-  learner: Learner;
-  attempt: Attempt;
-};
-
-type CompletionResult = {
-  xpEarned: number;
-  correctCount: number;
-  wrongCount: number;
-  learner: Learner;
+  estimatedMinutes: number;
+  exerciseCount: number;
 };
 
 type MatchSelection = {
-  left?: LessonOption;
-  right?: LessonOption;
+  left?: string;
+  right?: string;
 };
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  let lastError: unknown;
-
-  for (const apiBase of API_BASES) {
-    try {
-      const response = await fetch(`${apiBase}${path}`, {
-        ...init,
-        headers: {
-          "Content-Type": "application/json",
-          ...init?.headers,
-        },
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.detail ?? "Something went wrong");
-      }
-
-      return response.json();
-    } catch (caught) {
-      lastError = caught;
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error("Backend is unavailable");
-}
-
 export function LessonPlayer() {
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [learner, setLearner] = useState<Learner | null>(null);
-  const [attemptId, setAttemptId] = useState<number | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState("");
-  const [wordBank, setWordBank] = useState<string[]>([]);
-  const [matchedPairs, setMatchedPairs] = useState<string[]>([]);
+  const [lesson, setLesson] = useState<LessonPreview | null>(null);
+  const [attempt, setAttempt] = useState<AttemptResponse | null>(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
+  const [selectedWordIds, setSelectedWordIds] = useState<number[]>([]);
+  const [textAnswer, setTextAnswer] = useState("");
   const [matchSelection, setMatchSelection] = useState<MatchSelection>({});
-  const [result, setResult] = useState<AnswerResult | null>(null);
-  const [completion, setCompletion] = useState<CompletionResult | null>(null);
+  const [matches, setMatches] = useState<Array<{ left_id: string; right_id: string }>>([]);
+  const [feedback, setFeedback] = useState<SubmitResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const hasLoaded = useRef(false);
 
-  const exercise = lesson?.exercises[currentIndex] ?? null;
-  const progress = lesson ? ((currentIndex + (result ? 1 : 0)) / lesson.exercises.length) * 100 : 0;
+  const exercise = attempt?.currentExercise ?? null;
+  const learner = attempt?.learner;
+  const progress = attempt ? (attempt.currentExerciseIndex / attempt.totalExercises) * 100 : 0;
+
   const canCheck = useMemo(() => {
-    if (!exercise || result) return false;
-    if (exercise.type === "match_pairs") return matchedPairs.length >= exercise.options.length / 2;
-    return selectedAnswer.trim().length > 0;
-  }, [exercise, matchedPairs.length, result, selectedAnswer]);
+    if (!exercise || feedback) return false;
+    if (exercise.type === "multiple_choice") return selectedOptionId !== null;
+    if (exercise.type === "translate_word_bank") return selectedWordIds.length > 0;
+    if (exercise.type === "match_pairs") {
+      const pairCount = exercise.options.filter((option) => option.side === "left").length;
+      return pairCount > 0 && matches.length >= pairCount;
+    }
+    return textAnswer.trim().length > 0;
+  }, [exercise, feedback, matches.length, selectedOptionId, selectedWordIds.length, textAnswer]);
 
   useEffect(() => {
     if (hasLoaded.current) return;
     hasLoaded.current = true;
-    loadLesson();
+    void loadLesson();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadLesson() {
     setIsLoading(true);
     setError("");
-
+    resetExerciseState();
     try {
-      const [nextLesson, profile] = await Promise.all([
-        apiFetch<Lesson>(`/api/lessons/next?learner_id=${LEARNER_ID}`),
-        apiFetch<Learner>(`/api/learners/${LEARNER_ID}`),
+      const lessonId = await getRequestedLessonId();
+      const [preview, started] = await Promise.all([
+        getLessonPreview(lessonId) as Promise<LessonPreview>,
+        startLessonAttempt(lessonId, createIdempotencyKey()) as Promise<AttemptResponse>,
       ]);
-
-      setLesson(nextLesson);
-      setLearner(profile);
-
-      const attempt = await apiFetch<{ id: number; learner: Learner }>("/api/lesson-attempts", {
-        method: "POST",
-        body: JSON.stringify({
-          learner_id: LEARNER_ID,
-          lesson_id: nextLesson.id,
-        }),
-      });
-
-      setAttemptId(attempt.id);
-      setLearner(attempt.learner);
+      setLesson(preview);
+      setAttempt(started);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to load lesson");
     } finally {
@@ -174,34 +126,71 @@ export function LessonPlayer() {
     }
   }
 
-  function resetExerciseState() {
-    setSelectedAnswer("");
-    setWordBank([]);
-    setMatchedPairs([]);
-    setMatchSelection({});
-    setResult(null);
+  async function getRequestedLessonId(): Promise<number> {
+    const params = new URLSearchParams(window.location.search);
+    const explicitLessonId = Number(params.get("lessonId"));
+    if (Number.isInteger(explicitLessonId) && explicitLessonId > 0) {
+      return explicitLessonId;
+    }
+
+    const path = await getLearningPath();
+    for (const section of path.sections as Array<Record<string, unknown>>) {
+      for (const unit of (section.units ?? []) as Array<Record<string, unknown>>) {
+        for (const item of (unit.pathItems ?? []) as Array<Record<string, unknown>>) {
+          if (item.type !== "level" || item.state === "locked") continue;
+          const level = item.level as { lessons?: Array<{ id: number; completed?: boolean }> };
+          const lesson = level.lessons?.find((entry) => !entry.completed) ?? level.lessons?.[0];
+          if (lesson) return lesson.id;
+        }
+      }
+    }
+    throw new Error("No available lesson was found.");
   }
 
-  async function submitAnswer() {
-    if (!exercise || !attemptId || !canCheck) return;
+  function resetExerciseState() {
+    setSelectedOptionId(null);
+    setSelectedWordIds([]);
+    setTextAnswer("");
+    setMatchSelection({});
+    setMatches([]);
+    setFeedback(null);
+  }
+
+  function buildAnswer(): LessonAnswer | null {
+    if (!exercise) return null;
+    if (exercise.type === "multiple_choice" && selectedOptionId !== null) {
+      return { type: "multiple_choice", selected_option_id: selectedOptionId };
+    }
+    if (exercise.type === "translate_word_bank") {
+      return { type: "translate_word_bank", selected_option_ids: selectedWordIds };
+    }
+    if (exercise.type === "match_pairs") {
+      return { type: "match_pairs", matches };
+    }
+    if (exercise.type === "fill_blank") {
+      return { type: "fill_blank", text: textAnswer };
+    }
+    if (exercise.type === "type_answer") {
+      return { type: "type_answer", text: textAnswer };
+    }
+    return null;
+  }
+
+  async function checkAnswer() {
+    if (!attempt || !exercise || !canCheck) return;
+    const answer = buildAnswer();
+    if (!answer) return;
+
     setIsSubmitting(true);
-
-    const answer = exercise.type === "match_pairs" ? matchedPairs.join(",") : selectedAnswer;
-
+    setError("");
     try {
-      const answerResult = await apiFetch<AnswerResult>(
-        `/api/lesson-attempts/${attemptId}/answer`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            learner_id: LEARNER_ID,
-            exercise_id: exercise.id,
-            answer,
-          }),
-        },
-      );
-      setResult(answerResult);
-      setLearner(answerResult.learner);
+      const response = (await submitAnswer(attempt.attemptToken, createIdempotencyKey(), {
+        exercise_id: exercise.id,
+        client_submission_id: createIdempotencyKey(),
+        answer,
+      })) as SubmitResponse;
+      setFeedback(response);
+      setAttempt((current) => (current ? { ...current, learner: response.learner } : response));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not check answer");
     } finally {
@@ -209,67 +198,10 @@ export function LessonPlayer() {
     }
   }
 
-  async function continueLesson() {
-    if (!lesson || !attemptId) return;
-
-    const isLast = currentIndex >= lesson.exercises.length - 1;
-    if (!isLast) {
-      setCurrentIndex((value) => value + 1);
-      resetExerciseState();
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const completed = await apiFetch<CompletionResult>(
-        `/api/lesson-attempts/${attemptId}/complete`,
-        {
-          method: "POST",
-          body: JSON.stringify({ learner_id: LEARNER_ID }),
-        },
-      );
-      setCompletion(completed);
-      setLearner(completed.learner);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not finish lesson");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function regainHeart() {
-    try {
-      const updated = await apiFetch<Learner>("/api/learners/regain-heart", {
-        method: "POST",
-        body: JSON.stringify({ learner_id: LEARNER_ID, cost: 50 }),
-      });
-      setLearner(updated);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not regain a heart");
-    }
-  }
-
-  function toggleWord(word: string) {
-    const next = wordBank.includes(word)
-      ? wordBank.filter((item) => item !== word)
-      : [...wordBank, word];
-    setWordBank(next);
-    setSelectedAnswer(next.join(" "));
-  }
-
-  function selectMatch(option: LessonOption, side: "left" | "right") {
-    const nextSelection = { ...matchSelection, [side]: option };
-
-    if (nextSelection.left && nextSelection.right) {
-      if (nextSelection.left.pairKey === nextSelection.right.pairKey) {
-        const pair = `${nextSelection.left.pairKey}:${nextSelection.right.text.toLowerCase()}`;
-        setMatchedPairs((pairs) => [...new Set([...pairs, pair])]);
-      }
-      setMatchSelection({});
-      return;
-    }
-
-    setMatchSelection(nextSelection);
+  function continueLesson() {
+    if (!feedback) return;
+    setAttempt(feedback);
+    resetExerciseState();
   }
 
   if (isLoading) {
@@ -283,39 +215,16 @@ export function LessonPlayer() {
     );
   }
 
-  if (error && !lesson) {
+  if (error && !attempt) {
     return <LessonError message={error} onRetry={loadLesson} />;
   }
 
-  if (!lesson || !learner || !exercise) {
-    return <LessonError message="No lesson is available." onRetry={loadLesson} />;
+  if (feedback?.completion && !feedback.currentExercise) {
+    return <CompletionScreen feedback={feedback} />;
   }
 
-  if (completion) {
-    return (
-      <main className="grid min-h-dvh place-items-center bg-white px-5">
-        <section className="w-full max-w-xl rounded-2xl border-2 border-slate-100 p-8 text-center">
-          <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-lime-500 text-white shadow-[0_8px_0_#45a900]">
-            <FaCheck aria-hidden className="text-5xl" />
-          </div>
-          <h1 className="mt-8 text-4xl font-black text-slate-800">Lesson complete!</h1>
-          <p className="mt-3 text-lg font-bold text-slate-500">
-            You earned {completion.xpEarned} XP and kept your streak alive.
-          </p>
-          <div className="mt-8 grid grid-cols-3 gap-3">
-            <ResultStat label="XP" value={`+${completion.xpEarned}`} />
-            <ResultStat label="Correct" value={String(completion.correctCount)} />
-            <ResultStat label="Streak" value={String(completion.learner.currentStreak)} />
-          </div>
-          <Link
-            href="/learn"
-            className="mt-8 inline-flex h-14 items-center justify-center rounded-2xl bg-lime-500 px-10 text-base font-black uppercase text-white shadow-[0_5px_0_#45a900] transition hover:-translate-y-0.5"
-          >
-            Continue
-          </Link>
-        </section>
-      </main>
-    );
+  if (!attempt || !exercise) {
+    return <LessonError message="No lesson is available." onRetry={loadLesson} />;
   }
 
   return (
@@ -333,33 +242,37 @@ export function LessonPlayer() {
         </div>
         <div className="flex items-center gap-3 text-xl font-black text-rose-500">
           <FaHeart aria-hidden />
-          {learner.hearts}
+          {learner?.hearts ?? 0}
         </div>
         <div className="hidden items-center gap-3 text-xl font-black text-sky-500 sm:flex">
           <FaGem aria-hidden />
-          {learner.gems}
+          {learner?.gems ?? 0}
         </div>
       </header>
 
       <section className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-5 pb-8 pt-4">
         <p className="text-sm font-black uppercase text-slate-400">
-          {lesson.level.unit.section.title} - {lesson.level.unit.title} - {lesson.title}
+          {lesson?.title ?? "Spanish lesson"} - exercise {Math.min(attempt.currentExerciseIndex + 1, attempt.totalExercises)} of {attempt.totalExercises}
         </p>
         <h1 className="mt-6 text-3xl font-black text-slate-800 md:text-4xl">
-          {exercise.prompt ?? exercise.question}
+          {exercise.instruction || "Answer the prompt"}
         </h1>
+        <p className="mt-4 text-2xl font-black text-slate-700">{exercise.prompt}</p>
 
         <div className="mt-12">
           <ExerciseView
             exercise={exercise}
-            selectedAnswer={selectedAnswer}
-            setSelectedAnswer={setSelectedAnswer}
-            wordBank={wordBank}
-            toggleWord={toggleWord}
+            selectedOptionId={selectedOptionId}
+            setSelectedOptionId={setSelectedOptionId}
+            selectedWordIds={selectedWordIds}
+            setSelectedWordIds={setSelectedWordIds}
+            textAnswer={textAnswer}
+            setTextAnswer={setTextAnswer}
             matchSelection={matchSelection}
-            matchedPairs={matchedPairs}
-            selectMatch={selectMatch}
-            disabled={Boolean(result)}
+            setMatchSelection={setMatchSelection}
+            matches={matches}
+            setMatches={setMatches}
+            disabled={Boolean(feedback)}
           />
         </div>
 
@@ -371,56 +284,46 @@ export function LessonPlayer() {
       <footer
         className={[
           "border-t-2 px-5 py-5",
-          result?.correct ? "border-lime-200 bg-lime-50" : result ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-white",
+          feedback?.result === "correct"
+            ? "border-lime-200 bg-lime-50"
+            : feedback
+              ? "border-rose-200 bg-rose-50"
+              : "border-slate-100 bg-white",
         ].join(" ")}
       >
         <div className="mx-auto flex max-w-5xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          {result ? (
+          {feedback ? (
             <div>
               <p
                 className={[
                   "text-2xl font-black",
-                  result.correct ? "text-lime-600" : "text-rose-600",
+                  feedback.result === "correct" ? "text-lime-600" : "text-rose-600",
                 ].join(" ")}
               >
-                {result.correct ? "Excellent!" : "Correct answer: " + result.correctAnswer}
+                {feedback.feedbackTitle ?? (feedback.result === "correct" ? "Correct!" : "Not quite")}
               </p>
-              {result.explanation && (
-                <p className="mt-1 font-bold text-slate-500">{result.explanation}</p>
+              {feedback.feedbackMessage && (
+                <p className="mt-1 font-bold text-slate-500">{feedback.feedbackMessage}</p>
+              )}
+              {feedback.correctAnswer && feedback.result !== "correct" && (
+                <p className="mt-1 font-bold text-slate-500">Correct answer: {feedback.correctAnswer}</p>
               )}
             </div>
-          ) : learner.hearts <= 0 ? (
-            <div>
-              <p className="text-2xl font-black text-rose-600">You are out of hearts</p>
-              <p className="font-bold text-slate-500">Spend 50 gems to regain one heart.</p>
-            </div>
           ) : (
-            <button
-              onClick={regainHeart}
-              className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl border-2 border-slate-200 px-6 text-sm font-black uppercase text-slate-500 shadow-[0_4px_0_#e2e8f0] transition hover:-translate-y-0.5"
-            >
-              <FaRotateRight aria-hidden />
-              Regain heart
-            </button>
+            <div>
+              <p className="text-2xl font-black text-slate-800">Ready?</p>
+              <p className="font-bold text-slate-500">Check your answer to keep moving.</p>
+            </div>
           )}
 
-          {learner.hearts <= 0 && !result ? (
-            <button
-              onClick={regainHeart}
-              className="h-14 rounded-2xl bg-rose-500 px-8 text-sm font-black uppercase text-white shadow-[0_5px_0_#be123c]"
-            >
-              Use 50 gems
-            </button>
-          ) : (
-            <button
-              onClick={result ? continueLesson : submitAnswer}
-              disabled={isSubmitting || (!result && !canCheck)}
-              className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl bg-lime-500 px-8 text-sm font-black uppercase text-white shadow-[0_5px_0_#45a900] transition hover:-translate-y-0.5 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-[0_5px_0_#cbd5e1]"
-            >
-              {result ? "Continue" : "Check"}
-              {result && <FaArrowRight aria-hidden />}
-            </button>
-          )}
+          <button
+            onClick={feedback ? continueLesson : checkAnswer}
+            disabled={isSubmitting || (!feedback && !canCheck)}
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl bg-lime-500 px-8 text-sm font-black uppercase text-white shadow-[0_5px_0_#45a900] transition hover:-translate-y-0.5 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-[0_5px_0_#cbd5e1]"
+          >
+            {feedback ? "Continue" : "Check"}
+            {feedback && <FaArrowRight aria-hidden />}
+          </button>
         </div>
       </footer>
     </main>
@@ -429,133 +332,178 @@ export function LessonPlayer() {
 
 function ExerciseView({
   exercise,
-  selectedAnswer,
-  setSelectedAnswer,
-  wordBank,
-  toggleWord,
+  selectedOptionId,
+  setSelectedOptionId,
+  selectedWordIds,
+  setSelectedWordIds,
+  textAnswer,
+  setTextAnswer,
   matchSelection,
-  matchedPairs,
-  selectMatch,
+  setMatchSelection,
+  matches,
+  setMatches,
   disabled,
 }: {
-  exercise: LessonExercise;
-  selectedAnswer: string;
-  setSelectedAnswer: (answer: string) => void;
-  wordBank: string[];
-  toggleWord: (word: string) => void;
+  exercise: Exercise;
+  selectedOptionId: number | null;
+  setSelectedOptionId: (id: number | null) => void;
+  selectedWordIds: number[];
+  setSelectedWordIds: (ids: number[]) => void;
+  textAnswer: string;
+  setTextAnswer: (answer: string) => void;
   matchSelection: MatchSelection;
-  matchedPairs: string[];
-  selectMatch: (option: LessonOption, side: "left" | "right") => void;
+  setMatchSelection: (selection: MatchSelection) => void;
+  matches: Array<{ left_id: string; right_id: string }>;
+  setMatches: (matches: Array<{ left_id: string; right_id: string }>) => void;
   disabled: boolean;
 }) {
-  if (exercise.type === "type_answer") {
+  if (exercise.type === "fill_blank" || exercise.type === "type_answer") {
     return (
-      <div>
-        <p className="mb-6 text-2xl font-black text-slate-700">{exercise.question}</p>
-        <input
-          value={selectedAnswer}
-          onChange={(event) => setSelectedAnswer(event.target.value)}
-          disabled={disabled}
-          className="h-16 w-full rounded-2xl border-2 border-slate-200 px-5 text-xl font-bold outline-none focus:border-sky-300"
-          placeholder="Type your answer"
-        />
-      </div>
+      <input
+        value={textAnswer}
+        onChange={(event) => setTextAnswer(event.target.value)}
+        disabled={disabled}
+        className="h-16 w-full rounded-2xl border-2 border-slate-200 px-5 text-xl font-bold outline-none focus:border-sky-300"
+        placeholder="Type your answer"
+      />
     );
   }
 
-  if (exercise.type === "word_bank") {
+  if (exercise.type === "translate_word_bank") {
     return (
       <div>
-        <p className="mb-6 text-2xl font-black text-slate-700">{exercise.question}</p>
         <div className="mb-8 min-h-20 rounded-2xl border-2 border-dashed border-slate-200 p-4 text-xl font-black text-slate-700">
-          {wordBank.length ? wordBank.join(" ") : "Tap words to build the sentence"}
+          {selectedWordIds.length
+            ? selectedWordIds
+                .map((id) => exercise.options.find((option) => option.id === id)?.text)
+                .filter(Boolean)
+                .join(" ")
+            : "Tap words to build the sentence"}
         </div>
         <div className="flex flex-wrap justify-center gap-3">
-          {exercise.options.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => toggleWord(option.text)}
-              disabled={disabled}
-              className={[
-                "rounded-2xl border-2 px-6 py-4 text-xl font-black shadow-[0_4px_0_#e2e8f0] transition hover:-translate-y-0.5",
-                wordBank.includes(option.text)
-                  ? "border-sky-300 bg-sky-50 text-sky-600"
-                  : "border-slate-200 bg-white text-slate-700",
-              ].join(" ")}
-            >
-              {option.text}
-            </button>
-          ))}
+          {exercise.options.map((option) => {
+            const id = Number(option.id);
+            const selected = selectedWordIds.includes(id);
+            return (
+              <button
+                key={option.id}
+                onClick={() =>
+                  setSelectedWordIds(
+                    selected ? selectedWordIds.filter((item) => item !== id) : [...selectedWordIds, id],
+                  )
+                }
+                disabled={disabled}
+                className={[
+                  "rounded-2xl border-2 px-6 py-4 text-xl font-black shadow-[0_4px_0_#e2e8f0] transition hover:-translate-y-0.5",
+                  selected ? "border-sky-300 bg-sky-50 text-sky-600" : "border-slate-200 bg-white text-slate-700",
+                ].join(" ")}
+              >
+                {option.text}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
   }
 
   if (exercise.type === "match_pairs") {
-    const columns = exercise.options.reduce(
-      (acc, option, index) => {
-        acc[index % 2 === 0 ? "left" : "right"].push(option);
-        return acc;
-      },
-      { left: [] as LessonOption[], right: [] as LessonOption[] },
-    );
+    const left = exercise.options.filter((option) => option.side === "left");
+    const right = exercise.options.filter((option) => option.side === "right");
+
+    function choose(option: ExerciseOption) {
+      if (!option.side) return;
+      const next = { ...matchSelection, [option.side]: String(option.id) };
+      if (next.left && next.right) {
+        const pair = { left_id: next.left, right_id: next.right };
+        setMatches([...matches.filter((item) => item.left_id !== pair.left_id), pair]);
+        setMatchSelection({});
+      } else {
+        setMatchSelection(next);
+      }
+    }
 
     return (
-      <div>
-        <p className="mb-6 text-2xl font-black text-slate-700">{exercise.question}</p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {(["left", "right"] as const).map((side) => (
-            <div key={side} className="grid gap-3">
-              {columns[side].map((option) => {
-                const isSelected = matchSelection[side]?.id === option.id;
-                const isMatched = matchedPairs.some((pair) => pair.startsWith(`${option.pairKey}:`));
-
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => selectMatch(option, side)}
-                    disabled={disabled || isMatched}
-                    className={[
-                      "h-16 rounded-2xl border-2 px-5 text-xl font-black shadow-[0_4px_0_#e2e8f0] transition hover:-translate-y-0.5",
-                      isSelected
-                        ? "border-sky-300 bg-sky-50 text-sky-600"
-                        : isMatched
-                          ? "border-lime-200 bg-lime-50 text-lime-600"
-                          : "border-slate-200 bg-white text-slate-700",
-                    ].join(" ")}
-                  >
-                    {option.text}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[left, right].map((column, index) => (
+          <div key={index} className="grid gap-3">
+            {column.map((option) => {
+              const id = String(option.id);
+              const selected = matchSelection[option.side!] === id;
+              const matched = matches.some((match) => match.left_id === id || match.right_id === id);
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => choose(option)}
+                  disabled={disabled || matched}
+                  className={[
+                    "h-16 rounded-2xl border-2 px-5 text-xl font-black shadow-[0_4px_0_#e2e8f0] transition hover:-translate-y-0.5",
+                    selected
+                      ? "border-sky-300 bg-sky-50 text-sky-600"
+                      : matched
+                        ? "border-lime-200 bg-lime-50 text-lime-600"
+                        : "border-slate-200 bg-white text-slate-700",
+                  ].join(" ")}
+                >
+                  {option.text}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div>
-      <p className="mb-8 text-2xl font-black text-slate-700">{exercise.question}</p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {exercise.options.map((option) => (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {exercise.options.map((option) => {
+        const id = Number(option.id);
+        return (
           <button
             key={option.id}
-            onClick={() => setSelectedAnswer(option.text)}
+            onClick={() => setSelectedOptionId(id)}
             disabled={disabled}
             className={[
               "min-h-16 rounded-2xl border-2 px-5 py-4 text-xl font-black shadow-[0_4px_0_#e2e8f0] transition hover:-translate-y-0.5",
-              selectedAnswer === option.text
+              selectedOptionId === id
                 ? "border-sky-300 bg-sky-50 text-sky-600"
                 : "border-slate-200 bg-white text-slate-700",
             ].join(" ")}
           >
             {option.text}
           </button>
-        ))}
-      </div>
+        );
+      })}
     </div>
+  );
+}
+
+function CompletionScreen({ feedback }: { feedback: SubmitResponse }) {
+  const completion = feedback.completion;
+  return (
+    <main className="grid min-h-dvh place-items-center bg-white px-5">
+      <section className="w-full max-w-xl rounded-2xl border-2 border-slate-100 p-8 text-center">
+        <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-lime-500 text-white shadow-[0_8px_0_#45a900]">
+          <FaCheck aria-hidden className="text-5xl" />
+        </div>
+        <h1 className="mt-8 text-4xl font-black text-slate-800">Lesson complete!</h1>
+        <p className="mt-3 text-lg font-bold text-slate-500">
+          You earned {completion?.xpEarned ?? 0} XP.
+        </p>
+        <div className="mt-8 grid grid-cols-3 gap-3">
+          <ResultStat label="XP" value={`+${completion?.xpEarned ?? 0}`} />
+          <ResultStat label="Correct" value={String(feedback.correctCount)} />
+          <ResultStat label="Hearts" value={String(feedback.learner.hearts ?? 0)} />
+        </div>
+        <Link
+          href="/learn"
+          className="mt-8 inline-flex h-14 items-center justify-center rounded-2xl bg-lime-500 px-10 text-base font-black uppercase text-white shadow-[0_5px_0_#45a900] transition hover:-translate-y-0.5"
+        >
+          Continue
+        </Link>
+      </section>
+    </main>
   );
 }
 

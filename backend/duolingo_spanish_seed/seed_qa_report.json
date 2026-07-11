@@ -1,0 +1,36 @@
+{
+  "curriculum_counts": {
+    "sections": 2,
+    "units": 8,
+    "levels": 32,
+    "rewards": 8,
+    "path_items": 40,
+    "lessons": 128,
+    "exercises": 1024
+  },
+  "exercise_type_counts": {
+    "fill_blank": 224,
+    "match_pairs": 128,
+    "multiple_choice": 224,
+    "translate_word_bank": 224,
+    "type_answer": 224
+  },
+  "sqlite_table_counts": {
+    "languages": 2,
+    "courses": 1,
+    "sections": 2,
+    "units": 8,
+    "levels": 32,
+    "unit_rewards": 8,
+    "unit_path_items": 40,
+    "lessons": 128,
+    "exercises": 1024,
+    "lesson_exercises": 1024,
+    "exercise_options": 2501,
+    "exercise_match_pairs": 512,
+    "exercise_accepted_answers": 672
+  },
+  "sqlite_integrity_check": "ok",
+  "foreign_key_violations": 0,
+  "validation_errors": []
+}

@@ -1,11 +1,3 @@
-from fastapi import FastAPI
+from app.main import app
 
-app = FastAPI()
-
-@app.get("/")
-def home():
-    return {"message": "Duolingo Clone Backend is running"}
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
+__all__ = ["app"]
