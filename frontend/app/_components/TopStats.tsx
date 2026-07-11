@@ -2,25 +2,25 @@ import { stats } from "../_data/dashboard";
 import { IconImage } from "./IconImage";
 
 const toneClass = {
-  neutral: "text-slate-100",
-  hot: "text-amber-400",
-  sky: "text-sky-300",
-  heart: "text-rose-400",
+  neutral: "text-slate-500",
+  hot: "text-orange-500",
+  sky: "text-sky-500",
+  heart: "text-rose-500",
 };
 
 export function TopStats() {
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-800/70 bg-[#0b1d22]/90 px-4 py-3 backdrop-blur md:px-8 xl:static xl:border-b-0 xl:bg-transparent xl:px-0 xl:py-0">
+    <header className="sticky top-0 z-20 border-b-2 border-slate-100 bg-white/90 py-3 backdrop-blur xl:static xl:border-b-0 xl:bg-transparent">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 xl:justify-end">
         <a
           href="#"
-          className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-extrabold uppercase text-slate-400 transition hover:text-slate-100 xl:hidden"
+          className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-extrabold uppercase text-slate-400 transition hover:text-slate-700 xl:hidden"
         >
           <span aria-hidden="true">{"<"}</span>
           Back
         </a>
 
-        <div className="flex items-center gap-3 sm:gap-6">
+        <div className="flex items-center gap-4 sm:gap-7">
           {stats.map((stat) => (
             <div
               key={stat.label}

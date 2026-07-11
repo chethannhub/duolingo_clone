@@ -1,38 +1,39 @@
 import Image from "next/image";
 import Link from "next/link";
 import { sectionCards } from "../_data/dashboard";
+import { LearningPanel } from "./LearningPanel";
 
 export function SectionOverview() {
   return (
     <section className="space-y-5">
       <Link
         href="/learn"
-        className="flex items-center gap-4 border-b border-slate-600 pb-6 text-xl font-black text-slate-400 transition hover:text-white"
+        className="flex items-center gap-4 border-b-2 border-slate-100 pb-6 text-xl font-black text-slate-400 transition hover:text-slate-700"
       >
         <span aria-hidden="true">{"<"}</span>
         <span>Back</span>
       </Link>
 
       {sectionCards.map((section) => (
-        <article
+        <LearningPanel
           key={section.title}
           className={[
-            "relative overflow-hidden rounded-[1.375rem] border p-6",
+            "relative overflow-hidden",
             section.status === "complete"
-              ? "border-slate-600 bg-[#172a31] bg-[linear-gradient(135deg,transparent_0_20%,rgba(255,255,255,0.04)_20%_42%,transparent_42%_58%,rgba(255,255,255,0.04)_58%_78%,transparent_78%)]"
-              : "border-transparent bg-[#20353d]",
+              ? "bg-slate-50 bg-[linear-gradient(135deg,transparent_0_20%,rgba(15,23,42,0.03)_20%_42%,transparent_42%_58%,rgba(15,23,42,0.03)_58%_78%,transparent_78%)]"
+              : "bg-white",
             section.status === "locked" ? "opacity-45" : "",
           ].join(" ")}
         >
           <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_20rem] lg:items-center">
             <div>
-              <h2 className="text-3xl font-black text-white">{section.title}</h2>
-              <p className="mt-5 text-sm font-black uppercase tracking-wide text-lime-400">
+              <h2 className="text-3xl font-black text-slate-800">{section.title}</h2>
+              <p className="mt-5 text-sm font-black uppercase text-lime-600">
                 {section.progressLabel} - {section.unitCount} units
               </p>
             </div>
 
-            <div className="rounded-2xl bg-[#0f2026] p-5 text-xl font-black leading-relaxed text-white shadow-lg">
+            <div className="rounded-2xl bg-slate-50 p-5 text-xl font-black leading-relaxed text-slate-700">
               {section.description}
             </div>
           </div>
@@ -59,12 +60,12 @@ export function SectionOverview() {
           {section.status === "complete" && (
             <Link
               href="/learn"
-              className="absolute right-6 top-1/2 hidden h-16 -translate-y-1/2 place-items-center rounded-2xl border-2 border-slate-600 px-6 text-sm font-black uppercase text-sky-300 shadow-[0_5px_0_#263b44] transition hover:border-sky-400 md:grid"
+              className="absolute right-6 top-1/2 hidden h-16 -translate-y-1/2 place-items-center rounded-2xl border-2 border-slate-200 px-6 text-sm font-black uppercase text-sky-500 shadow-[0_5px_0_#e2e8f0] transition hover:border-sky-300 md:grid"
             >
               {section.actionLabel}
             </Link>
           )}
-        </article>
+        </LearningPanel>
       ))}
     </section>
   );

@@ -56,7 +56,7 @@ export const navItems: NavItem[] = [
   { label: "Learn", icon: "/Icon=House, Size=Small.svg", href: "/learn" },
   { label: "Letters", icon: "/globe.svg", href: "/learn" },
   { label: "Practice", icon: "/Icon=Weights, Size=Small.svg", href: "/learn" },
-  { label: "Leaderboards", icon: "/Icon=Trophy, Size=Small.svg", href: "/learn" },
+  { label: "Leaderboards", icon: "/Icon=Trophy, Size=Small.svg", href: "/leaderboard" },
   { label: "Quests", icon: "/Icon=Shiny Gold Chest, Size=Small.svg", href: "/learn" },
   { label: "Shop", icon: "/window.svg", href: "/learn" },
   { label: "Profile", icon: "/Icon=Duo Pro, Size=Small.svg", href: "/learn" },

@@ -1,19 +1,20 @@
 import Image from "next/image";
 import { questItems } from "../_data/dashboard";
 import { IconImage } from "./IconImage";
+import { LearningPanel } from "./LearningPanel";
 
 export function RightRail() {
   return (
-    <aside className="hidden h-dvh w-[28.75rem] shrink-0 overflow-y-auto px-1 py-10 2xl:block">
+    <aside className="hidden h-dvh w-[23rem] shrink-0 overflow-y-auto px-1 pb-10 xl:block">
       <div className="space-y-5 pb-10">
-      <Panel>
+      <LearningPanel>
         <div className="flex items-start justify-between gap-5">
           <div>
-            <p className="mb-4 inline-flex rounded-md bg-gradient-to-r from-sky-300 to-fuchsia-400 px-2 py-1 text-sm font-black italic text-white">
+            <p className="mb-4 inline-flex rounded-md bg-gradient-to-r from-sky-400 to-violet-500 px-2 py-1 text-sm font-black italic text-white">
               SUPER
             </p>
-            <h2 className="text-xl font-black text-white">Try Super for free</h2>
-            <p className="mt-4 text-lg font-bold leading-8 text-slate-300">
+            <h2 className="text-xl font-black text-slate-800">Try Super for free</h2>
+            <p className="mt-4 text-base font-bold leading-7 text-slate-500">
               No ads, personalized practice, and unlimited Legendary!
             </p>
           </div>
@@ -29,12 +30,12 @@ export function RightRail() {
         <button className="mt-8 h-14 w-full rounded-2xl bg-indigo-500 text-sm font-black uppercase text-white shadow-[0_5px_0_#3530d9] transition hover:-translate-y-0.5">
           Try 1 week free
         </button>
-      </Panel>
+      </LearningPanel>
 
-      <Panel>
+      <LearningPanel>
         <div className="mb-7 flex items-center justify-between">
-          <h2 className="text-xl font-black text-white">Bronze League</h2>
-          <a href="#" className="text-sm font-black uppercase text-sky-300">
+          <h2 className="text-xl font-black text-slate-800">Bronze League</h2>
+          <a href="#" className="text-sm font-black uppercase text-sky-500">
             View league
           </a>
         </div>
@@ -43,18 +44,18 @@ export function RightRail() {
             <IconImage src="/Icon=Trophy, Size=Small.svg" alt="" size={48} />
           </div>
           <div>
-            <p className="font-black text-white">You are ranked #16</p>
-            <p className="mt-2 font-bold leading-7 text-slate-300">
+            <p className="font-black text-slate-800">You are ranked #16</p>
+            <p className="mt-2 font-bold leading-7 text-slate-500">
               You have earned 75 XP this week so far
             </p>
           </div>
         </div>
-      </Panel>
+      </LearningPanel>
 
-      <Panel>
+      <LearningPanel>
         <div className="mb-7 flex items-center justify-between">
-          <h2 className="text-xl font-black text-white">Daily Quests</h2>
-          <a href="#" className="text-sm font-black uppercase text-sky-300">
+          <h2 className="text-xl font-black text-slate-800">Daily Quests</h2>
+          <a href="#" className="text-sm font-black uppercase text-sky-500">
             View all
           </a>
         </div>
@@ -63,13 +64,13 @@ export function RightRail() {
             <div key={quest.label} className="flex items-center gap-5">
               <IconImage src="/Icon=Lightning, Size=Small.svg" alt="" size={48} />
               <div className="min-w-0 flex-1">
-                <div className="mb-3 flex justify-between gap-4 font-black text-white">
+                <div className="mb-3 flex justify-between gap-4 font-black text-slate-700">
                   <span>{quest.label}</span>
-                  <span className="text-amber-400">{quest.progress}</span>
+                  <span className="text-orange-500">{quest.progress}</span>
                 </div>
-                <div className="h-4 overflow-hidden rounded-full bg-slate-700">
+                <div className="h-4 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className="h-full rounded-full bg-amber-400"
+                    className="h-full rounded-full bg-orange-400"
                     style={{ width: quest.complete ? "100%" : "35%" }}
                   />
                 </div>
@@ -77,28 +78,9 @@ export function RightRail() {
             </div>
           ))}
         </div>
-      </Panel>
+      </LearningPanel>
 
       </div>
     </aside>
-  );
-}
-
-function Panel({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section
-      className={[
-        "rounded-[1.375rem] border border-slate-600 bg-[#0f2026] p-6",
-        className,
-      ].join(" ")}
-    >
-      {children}
-    </section>
   );
 }
