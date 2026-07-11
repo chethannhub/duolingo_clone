@@ -1,3 +1,4 @@
+import os
 import json
 import uuid
 from datetime import datetime, timedelta
@@ -39,9 +40,21 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+def get_cors_origins() -> list[str]:
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://duolingo-clone-navy.vercel.app",
+    ]
+    extra_origins = os.getenv("CORS_ORIGINS", "")
+    if extra_origins:
+        origins.extend(origin.strip() for origin in extra_origins.split(",") if origin.strip())
+    return list(dict.fromkeys(origins))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
